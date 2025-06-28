@@ -182,9 +182,14 @@ ggsave("outputs/ordination-sites.png",width = 7.5, height = 15)
 
 ## 3 - Séries temporelles ------------------------------------------------------
 
-p1 <- ggplot(df.all)+
-  aes(x = START_HOUR, y = ACI)+
+st.tahiti.pa <- subset(df.all,AREA == "Tahiti - Papehue")
+
+ndsi.t <- ggplot(st.tahiti.pa)+
+  aes(x = START_30MN, y = NDSI)+
   geom_point()+
-  geom_smooth()+
-  facet_wrap(~SITE)
-p1
+  geom_smooth(color =  "#e66c5c")+
+  facet_wrap(~SITE)+
+  theme_minimal()+
+  labs(x = "Heure",y = "NDSI")
+
+ndsi.t
