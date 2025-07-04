@@ -18,6 +18,9 @@ library(patchwork)
 
 ## données ---------------------------------------------------------------------
 
+# position des enregistreurs
+xy <- read.csv2("data/spatial/positions_SM.csv")
+
 wd <- "data/acoustic-indices/"
 df.all <- data.frame()
 
@@ -153,13 +156,13 @@ p.day <- fviz_pca_biplot(
   mean.point.size = 0,
   col.var = "black",
   ggtheme = theme_minimal(),
-  title = "Jour",
+  title = "(A) Jour",
   legend.title = "Sites"
 )
 p.day
 
 p.night <- fviz_pca_biplot(
-  s.night,
+  s.night0,
   label = "var",
   habillage = df.night$AREA,
   axes = c(1, 2),
@@ -170,7 +173,7 @@ p.night <- fviz_pca_biplot(
   mean.point.size = 0,
   col.var = "black",
   ggtheme = theme_minimal(),
-  title = "Nuit",
+  title = "(B) Nuit",
   legend.title = "Sites"
 )
 p.night
@@ -180,8 +183,41 @@ ggsave("outputs/ordination-sites.png",width = 7.5, height = 15)
 
 ## 2 - Analyse spatiale : cartographie -----------------------------------------
 
+# la cartographie est faite sous qGIS par simplicité
+
+avg.day <- aggregate(df.day[, c("BIOAC", "H", "ACI", "ADI", "NDSI", "NP")], by = list(df.day$SITE), FUN =
+                       "mean")
+cv.day <- aggregate(
+  df.day[, c("BIOAC", "H", "ACI", "ADI", "NDSI", "NP")],
+  by = list(df.day$SITE),
+  FUN = function(x) {
+    sd(x) / mean(x)
+  }
+)
+colnames(cv.day)[-1] <- c("cv.BIOAC","cv.H","cv.ACI","cv.ADI","cv.NDSI","cv.NP")
+synth.day <- merge(avg.day, cv.day, by = "Group.1")
+colnames(synth.day)[1] <- "name"
+xy.day <- merge(synth.day,xy,by = "name" , all = F)
+  
+avg.night <- aggregate(df.night[, c("BIOAC", "H", "ACI", "ADI", "NDSI", "NP")], by = list(df.night$SITE), FUN =
+                         "mean")
+cv.night <- aggregate(
+  df.night[, c("BIOAC", "H", "ACI", "ADI", "NDSI", "NP")],
+  by = list(df.night$SITE),
+  FUN = function(x) {
+    sd(x) / mean(x)
+  }
+)
+colnames(cv.night)[-1] <- c("cv.BIOAC","cv.H","cv.ACI","cv.ADI","cv.NDSI","cv.NP")
+synth.night <- merge(avg.night, cv.night, by = "Group.1")
+colnames(synth.night)[1] <- "name"
+xy.night <- merge(synth.night,xy,by = "name" , all = F)
+
+
+
 ## 3 - Séries temporelles ------------------------------------------------------
 
+# Papehue 
 st.tahiti.pa <- subset(df.all,AREA == "Tahiti - Papehue")
 
 ndsi.t <- ggplot(st.tahiti.pa)+
@@ -190,6 +226,40 @@ ndsi.t <- ggplot(st.tahiti.pa)+
   geom_smooth(color =  "#e66c5c")+
   facet_wrap(~SITE)+
   theme_minimal()+
-  labs(x = "Heure",y = "NDSI")
+  labs(x = "Heure",y = "NDSI",title="")
 
-ndsi.t
+bioac.t <- ggplot(st.tahiti.pa)+
+  aes(x = START_30MN, y = BIOAC)+
+  geom_point()+
+  geom_smooth(color =  "steelblue")+
+  facet_wrap(~SITE)+
+  theme_minimal()+
+  labs(x = "Heure",y = "BIOAC",title="")
+
+# Arahurahu 
+st.tahiti.ar <- subset(df.all,AREA == "Tahiti - Arahurahu")
+
+ndsi.ar <- ggplot(st.tahiti.ar)+
+  aes(x = START_30MN, y = NDSI)+
+  geom_point()+
+  geom_smooth(color =  "#e66c5c")+
+  facet_wrap(~SITE)+
+  theme_minimal()+
+  labs(x = "Heure",y = "NDSI",title="")
+
+bioac.ar <- ggplot(st.tahiti.ar)+
+  aes(x = START_30MN, y = BIOAC)+
+  geom_point()+
+  geom_smooth(color =  "steelblue")+
+  facet_wrap(~SITE)+
+  theme_minimal()+
+  labs(x = "Heure",y = "BIOAC",title="")
+
+ndsi.t / bioac.t
+ggsave("outputs/time_series_pa.png",width = 15, height = 7)
+
+ndsi.ar / bioac.ar
+ggsave("outputs/time_series_ar.png",width = 15, height = 7)
+
+
+
